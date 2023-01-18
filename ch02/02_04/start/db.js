@@ -1,31 +1,38 @@
-const { LocalStorage } = require('node-localstorage')
+const { LocalStorage } = require('node-localstorage');
 
-const db = new LocalStorage('data')
+const dbA = new LocalStorage('./data-a-m');
+const dbB = new LocalStorage('./data-n-z');
 
-const loadCats = () => JSON.parse(db.getItem("cats") || '[]')
+// we match the first letter of the name to the correct database
+const whichDB = (catName) => (catName.match(/^[a-m]|^[A-M]/) ? dbA : dbB);
 
-const hasCat = name => loadCats()
-    .map(cat => cat.name)
-    .includes(name)
+const loadCats = (db) => JSON.parse(db.getItem('cats') || '[]');
+
+const hasCat = (name) =>
+  loadCats(whichDB(name))
+    .map((cat) => cat.name)
+    .includes(name);
 
 module.exports = {
-
-    addCat(newCat) {
-        if (!hasCat(newCat.name)) {
-            let cats = loadCats()
-            cats.push(newCat)
-            db.setItem("cats", JSON.stringify(cats, null, 2))
-        }
-    },
-
-    findCatByName(name) {
-        let cats = loadCats()
-        return cats.find(cat => cat.name === name)
-    },
-
-    findCatsByColor(color) {
-        let cats = loadCats()
-        return cats.filter(cat => cat.color === color)
+  addCat(newCat) {
+    if (!hasCat(newCat.name)) {
+      const db = whichDB(newCat.name);
+      let cats = loadCats(db);
+      cats.push(newCat);
+      db.setItem('cats', JSON.stringify(cats, null, 2));
     }
+  },
 
-}
+  findCatByName(name) {
+    let cats = loadCats(whichDB(name));
+    return cats.find((cat) => cat.name === name);
+  },
+
+  findCatsByColor(color) {
+    return [
+      // this ... is called spread operator
+      ...loadCats(dbA).filter(() => cats.color === color),
+      ...loadCats(dbB).filter(() => cats.color === color),
+    ];
+  },
+};
